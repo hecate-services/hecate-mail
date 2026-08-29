@@ -23,34 +23,72 @@ watchtower; or `msi00`, podman + Quadlet). This doesn't block *development*
 while writing this plan), but it does mean "ship it" means "provision it
 properly," not "leave a process running in a terminal."
 
-## Provisioning (v1, per `identity_model.md`'s own table)
+## Provisioning — corrected against real fleet practice, 2026-08-29
 
-1. Register a service principal with `hecate-realm`, declaring
-   `identity_spec/0`:
-   ```erlang
-   identity_spec() ->
-       #{scope => <<"hecate-mail">>,
-         actions => [<<"register_mailbox">>, <<"get_citizen_mail_location">>,
-                     <<"deposit_letter">>, <<"get_mailbox">>, <<"get_letter">>],
-         resources => [<<"mail_locations/*">>, <<"mailboxes/*">>],
-         ttl_days => 365}.
-   ```
-   Ask for exactly what's advertised, per this workspace's own stated
-   reasoning for that field: a popped credential should grant exactly this
-   and nothing more.
-2. Credential lands at `/etc/hecate/secrets/hecate-mail/`, mounted into
-   the container — the same `hecate_realm_session:provision_from_inherited_creds/2`
-   path every other headless service uses (v1: manual/scripted; v2, per
-   `identity_model.md`'s own roadmap, the `/api/v1/services/provision`
-   endpoint once policy+UCAN delegation lands — this repo doesn't build v2,
-   it just isn't surprised when the credential type under it changes, since
-   `hecate_om_identity` abstracts the swap).
-3. Deploy via this repo's generated `Containerfile` + `deploy/docker-compose.yml`
-   (already scaffolded), following whichever of this workspace's two current
-   deployment paths the operator picks (docker+watchtower on the beam
-   fleet, or podman+Quadlet on msi00) — same CI-builds-image,
-   registry-serves-it, auto-update-rolls-it shape every other service here
-   already uses. No new deployment mechanism invented for this repo.
+**LIVE as of this writing**, on `beam01.lab` and `beam02.lab`, healthy,
+answering `/health` on 8496. This section originally described the formal
+realm service-principal cert flow (`identity_spec/0` →
+`/api/v1/services/provision` → cert mounted at
+`/etc/hecate/secrets/hecate-mail/`) as a hard prerequisite, reasoning from
+`identity_model.md`'s own description. **That turned out not to match what
+any currently-deployed service on this fleet actually does** — checked
+directly against five real, running examples (`hecate-tube`,
+`hecate-whiteboard`, `hecate-biotope`, `hecate-turn-credentials`,
+`hecate-stations`) before deploying this one, not assumed. None of them
+mount a service-principal cert. Every one boots with exactly two identity-
+related environment variables:
+
+- `HECATE_REALM` — a 64-hex realm tag, shared across services that need to
+  find each other (this deployment reuses the same tag `hecate-tube` and
+  `hecate-whiteboard` already hold on `beam01`/`beam02`, derived
+  node-to-node rather than minted fresh — see below).
+- `MACULA_STATION_SEEDS` — which station(s) to dial.
+
+The formal cert-provisioning flow `identity_model.md` describes may be a
+real v1 mechanism for services that need it, but it is not something
+`hecate_om:boot/1` requires to run today, and no sibling service pays that
+cost. **Corrected here rather than left wrong**, since the plan is meant to
+describe what actually ships.
+
+## Real deployment, as executed
+
+1. **Infrastructure lives in `macula-io/macula-demo`** (private repo), NOT
+   in this repo. Per-node config: `infrastructure/beamXX.lab/
+   hecate-mail-config.env` (committed, key-free — station seed only).
+   Shared compose: `infrastructure/scripts/docker-compose.hecate-mail.yml`.
+   Both follow `hecate-whiteboard`'s and `hecate-biotope`'s own committed
+   pattern exactly — no new deployment mechanism invented for this repo.
+2. **Secret**: `~/.hecate/secrets/hecate-mail.env` (0600, `HECATE_REALM`
+   only) on each node, seeded via `scripts/enroll-hecate-mail-secret.sh`
+   — derived from that same node's already-seeded `hecate-whiteboard.env`
+   for the first node, then node-to-node for the second. The value never
+   transits the operator's own workstation as anything but an SSH-to-SSH
+   pipe.
+3. **Rollout is pull-based, not pushed.** Each beam node runs a
+   `hecate-reconcile` systemd `--user` timer (every 2 minutes) that
+   `git pull --ff-only`s `macula-demo` and applies whatever
+   `infrastructure/<node>/reconcile.manifest` lists. Adding this service
+   meant appending one line + a dated comment block to each of
+   `beam01.lab/reconcile.manifest` and `beam02.lab/reconcile.manifest`,
+   committing, and pushing — the box does the rest on its own schedule
+   (or immediately, via `systemctl --user start hecate-reconcile.service`
+   by hand, which is how this was actually verified same-session rather
+   than waiting up to 2 minutes).
+4. **Port 8496** — the next free slot on this fleet's own ledger, checked
+   directly (`grep -rhoE '84[0-9]{2}'` across the infra repo) rather than
+   guessed: 8490/8491 `hecate-tube`, 8492/8493 `hecate-whiteboard`, 8494
+   `hecate-turn-credentials`, 8495 `hecate-stations`. Host networking
+   makes a collision a silent bind failure, not an error, so this was
+   worth checking before deploying, not after.
+5. **Stations**: reused `hecate-whiteboard`'s own already-vetted distinct
+   pair (`station-de-falkenstein` on beam01, `station-fi-helsinki` on
+   beam02, confirmed via `dig AAAA` to be genuinely different boxes) rather
+   than re-deriving that check for a second service on the same two nodes.
+
+Watchtower (`com.centurylinklabs.watchtower.enable=true` label, already in
+the compose file) handles image updates from here — a future `git push` to
+this repo's `main` rebuilds `ghcr.io/hecate-services/hecate-mail:latest`,
+and both nodes pick it up on their own without any further manual step.
 
 ## Why more than one instance might genuinely exist
 

@@ -10,10 +10,14 @@ lives in the sibling [`hecate-citizens`](https://github.com/hecate-services/heca
 service instead of here, the open caller-identity-verification question --
 is in [`plans/PLAN_ROOT.md`](plans/PLAN_ROOT.md). Start there.
 
-## Status: scaffold
+## Status: scaffold, deployed
 
-The service boots, joins the mesh and answers `/health` on 8490. It
-does nothing else yet.
+The service boots, joins the mesh and answers `/health`. It does nothing
+else yet. **Live on `beam01.lab` and `beam02.lab`** (port 8496 there --
+8490 below is this repo's own standalone-run default; the fleet overrides
+it per its own port ledger, see `plans/PLAN_ROOT.md` PART4), deployed via
+`macula-io/macula-demo`'s pull-based reconciler, not through anything in
+this repo directly.
 
 It announces no capability and asks the realm for no authority, because it can do
 nothing yet. Both lists grow when the thing they name exists. Advertising a
