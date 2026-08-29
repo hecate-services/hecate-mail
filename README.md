@@ -1,15 +1,14 @@
-# hecate-mcp-mail
+# hecate-mail
 
-**Async mailboxes and a citizens directory for the Macula mesh -- lets an agent delegate work to a citizen who is not online right now, and discover who else is out there**
+**Async mailboxes for the Macula mesh -- lets an agent delegate work to a citizen who is not online right now**
 
 ## Plan
 
 The scaffold below builds and passes its own tests but implements no domain
-logic yet. The full design -- why this exists, the citizens-directory and
-mailbox pieces, federation across instances, the open authorization question
-that must be resolved before mailboxes can be read, deployment and phased
-build order -- is in [`plans/PLAN_ROOT.md`](plans/PLAN_ROOT.md). Start there,
-not here, before writing any desk.
+logic yet. The full design -- mail-location routing, mailboxes, why identity
+lives in the sibling [`hecate-citizens`](https://github.com/hecate-services/hecate-citizens)
+service instead of here, the open caller-identity-verification question --
+is in [`plans/PLAN_ROOT.md`](plans/PLAN_ROOT.md). Start there.
 
 ## Status: scaffold
 
@@ -33,7 +32,7 @@ Building the image needs a Rust toolchain, because macula ships a QUIC NIF and
 the alpine build compiles it from source rather than fetching one linked against
 a different libc.
 
-    podman build -t hecate-mcp-mail -f Containerfile .
+    podman build -t hecate-mail -f Containerfile .
 
 ## Configuration
 
@@ -42,9 +41,9 @@ a different libc.
 | `HECATE_REALM` | required | 64-hex realm tag, the `sha256` of the realm's name. No default: a service that guesses its realm announces itself where nobody can attribute it. |
 | `MACULA_STATION_SEEDS` | required | Station to dial. No default: naming a realm costs nothing, dialling a production station from every dev clone does. |
 | `HECATE_HEALTH_PORT` | `8490` | Health endpoint. Host networking makes a collision a silent bind failure, so check the host before changing.  |
-| `HECATE_NODE_NAME` | `hecate_mcp_mail` | Erlang node name. |
+| `HECATE_NODE_NAME` | `hecate_mail` | Erlang node name. |
 | `HECATE_NODE_HOST` | `127.0.0.1` | Erlang node host. |
-| `HECATE_COOKIE` | `hecate_mcp_mail` | Erlang cookie. |
+| `HECATE_COOKIE` | `hecate_mail` | Erlang cookie. |
 
 `deploy/docker-compose.yml` runs it, and carries what the service knows about
 itself. If you deploy through something else, let that carry **placement**: which
@@ -54,7 +53,7 @@ what stops a config table in a README and the real environment drifting.
 ## Deployment
 
 CI builds on every push to `main` and pushes
-`ghcr.io/hecate-services/hecate-mcp-mail:latest` plus the semver tag. Pull `:latest` under
+`ghcr.io/hecate-services/hecate-mail:latest` plus the semver tag. Pull `:latest` under
 watchtower and a merge is a deploy, while a rollback is pinning to a semver tag.
 
 Two things CI cannot do for you, both of which have bitten:
@@ -67,7 +66,7 @@ Two things CI cannot do for you, both of which have bitten:
 
 ## The service contract
 
-Six callbacks in `hecate_mcp_mail_service`, all required, all resolved **by name** by
+Six callbacks in `hecate_mail_service`, all required, all resolved **by name** by
 `hecate_om` at startup on a live node. The `-behaviour(hecate_om_service)`
 attribute turns a missing one into a compile error rather than an `undef` where
 nobody is watching, and the eunit suite guards the attribute itself.
@@ -75,7 +74,7 @@ nobody is watching, and the eunit suite guards the attribute itself.
 ### The store
 
 This service was scaffolded with `store=1`, so it owns a `reckon-db` store called
-`hecate_mcp_mail_store`. `store_id/0` and `data_dir/0` are exported, `hecate_om:boot/1`
+`hecate_mail_store`. `store_id/0` and `data_dir/0` are exported, `hecate_om:boot/1`
 opens the store and its evoq subscription before `start/1` fires, and
 `config/sys.config.src` carries the `evoq` adapter block that boot requires.
 

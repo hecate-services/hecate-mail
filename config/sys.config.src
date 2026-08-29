@@ -37,7 +37,7 @@
         %% A fallback evoq resolves before it knows whether anything dispatches a
         %% command. It must name the SAME store as `store_id/0', and a generated
         %% test compares the two.
-        {store_id,               hecate_mcp_mail_store}
+        {store_id,               hecate_mail_store}
     ]},
     {kernel, [{logger_level, info}]}
 ].

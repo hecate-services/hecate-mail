@@ -6,21 +6,21 @@ this service. That changed the moment `hecate-mcp-agora` was named as a real
 next service needing the same identity data — see
 [`hecate-services/hecate-citizens`](https://github.com/hecate-services/hecate-citizens)'s
 own `plans/PLAN_ROOT.md` for the full reasoning and design. This part now
-covers only what stays in `hecate-mcp-mail`.
+covers only what stays in `hecate-mail`.
 
 ## What moved out, and why
 
 Identity (`citizen_did`, `display_name`, `offers`, generic presence) now
 lives in `hecate-citizens`, federated across instances via mesh facts using
 the Listener/Policy/Projection pattern. Any service — this one, `agora`,
-whatever comes after — depends on it for "does this DID belong to a known
+whatever comes after — consumes it for "does this DID belong to a known
 citizen," rather than each maintaining its own copy that can silently
 diverge from the others.
 
 ## What stays here — mailbox routing, not identity
 
-`hecate-mcp-mail` still needs to answer one question `hecate-citizens`
-deliberately doesn't: **which `hecate-mcp-mail` instance holds this
+`hecate-mail` still needs to answer one question `hecate-citizens`
+deliberately doesn't: **which `hecate-mail` instance holds this
 citizen's mailbox?** That's mail-specific routing data, not identity, per
 `hecate-citizens`'s own scope test ("would a second, unrelated consumer
 plausibly want this same fact?" — no other service cares where someone's
@@ -36,7 +36,7 @@ narrower content:
 No `display_name`, no `offers` — those are `hecate-citizens`'s job now. If
 a caller wants a citizen's display name alongside their mail-hosting
 location, that's two calls (`hecate_citizens.get_citizen` +
-`hecate_mcp_mail.get_citizen_mail_location`), not one merged record — cheap,
+`hecate_mail.get_citizen_mail_location`), not one merged record — cheap,
 and it keeps the services genuinely decoupled rather than secretly coupled
 through a shared schema.
 
@@ -45,9 +45,9 @@ through a shared schema.
 ```erlang
 capabilities() ->
     [
-     #{name => <<"hecate_mcp_mail.register_mailbox">>, version => 1,
+     #{name => <<"hecate_mail.register_mailbox">>, version => 1,
        handler => {register_mailbox_handler, []}},
-     #{name => <<"hecate_mcp_mail.get_citizen_mail_location">>, version => 1,
+     #{name => <<"hecate_mail.get_citizen_mail_location">>, version => 1,
        handler => {get_citizen_mail_location_handler, []}}
     ].
 ```
@@ -77,12 +77,12 @@ handle_request(Payload, State) ->
     ExpiresAt = erlang:system_time(millisecond) + ?MAIL_LOCATION_TTL_MS,
     Fields = #{citizen_did => Did, hosted_at => HostedAt, expires_at => ExpiresAt},
     mail_location_read_model:upsert(Fields),
-    ok = hecate_om_pubsub:publish(<<"hecate_mcp_mail.mail_location">>, Fields),
+    ok = hecate_om_pubsub:publish(<<"hecate_mail.mail_location">>, Fields),
     {reply, #{ok => 1, expires_at => ExpiresAt}, State}.
 ```
 
 A citizen registers with `hecate-citizens` (identity) and, separately, with
-`hecate-mcp-mail` (a mailbox) if they want one — **this service does not
+`hecate-mail` (a mailbox) if they want one — **this service does not
 call `hecate-citizens` on a citizen's behalf to write anything.** The two
 services are not chained for writes, only optionally consulted for reads
 (and even that's a nice-to-have — nothing here blocks on `hecate-citizens`
@@ -93,9 +93,9 @@ status).
 ## Federation — same pattern, narrower topic, unchanged from the original design
 
 ```erlang
-%% hecate_mcp_mail_service.erl
+%% hecate_mail_service.erl
 subscriptions() ->
-    [{<<"hecate_mcp_mail.mail_location">>, mail_location_listener, []}].
+    [{<<"hecate_mail.mail_location">>, mail_location_listener, []}].
 ```
 
 Listener → Policy (`on_mail_location_maybe_admit:decide/2`, identical
@@ -107,8 +107,8 @@ identity) and its name.
 ## What `hosted_at` is for — unchanged in purpose, narrower in company
 
 To deposit a letter for citizen X, an agent calls
-`hecate_mcp_mail.get_citizen_mail_location` (on whichever
-`hecate-mcp-mail` instance is convenient — the mail-location directory is
+`hecate_mail.get_citizen_mail_location` (on whichever
+`hecate-mail` instance is convenient — the mail-location directory is
 the same everywhere, same as before) to learn X's `hosted_at`, then calls
 `deposit_letter` on *that specific instance* directly (`mesh_call`'s `host`
 parameter). Unchanged from the original design; only the field's neighbors

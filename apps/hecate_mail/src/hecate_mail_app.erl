@@ -5,15 +5,15 @@
 %% the service module, so no reckon-db is started.
 %%
 %% To make this a CMD/PRJ service that owns an event store, export store_id/0 and
-%% data_dir/0 from hecate_mcp_mail_service. hecate_om:boot/1 picks them up and starts
+%% data_dir/0 from hecate_mail_service. hecate_om:boot/1 picks them up and starts
 %% the store plus its evoq subscription BEFORE start/1 fires, so you never call
 %% reckon_db_sup:start_store/1 yourself.
--module(hecate_mcp_mail_app).
+-module(hecate_mail_app).
 
 -behaviour(application).
 
 -export([start/2, stop/1]).
 
-start(_Type, _Args) -> hecate_om:boot(hecate_mcp_mail_service).
+start(_Type, _Args) -> hecate_om:boot(hecate_mail_service).
 
 stop(_State) -> ok.

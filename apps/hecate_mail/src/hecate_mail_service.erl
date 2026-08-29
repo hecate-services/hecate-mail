@@ -11,7 +11,7 @@
 %% service can find and call. Both lists grow when the thing they name exists,
 %% and a generated test fails when they change, so growing them is a deliberate
 %% act rather than a comment someone forgot.
--module(hecate_mcp_mail_service).
+-module(hecate_mail_service).
 
 -behaviour(hecate_om_service).
 
@@ -40,11 +40,11 @@
 -export([store_id/0, data_dir/0]).
 
 info() ->
-    #{name => <<"hecate-mcp-mail">>,
+    #{name => <<"hecate-mail">>,
       version => <<"0.1.0">>,
-      description => <<"Async mailboxes and a citizens directory for the Macula mesh -- lets an agent delegate work to a citizen who is not online right now, and discover who else is out there">>}.
+      description => <<"Async mailboxes for the Macula mesh -- lets an agent delegate work to a citizen who is not online right now">>}.
 
-start(_Opts) -> hecate_mcp_mail_sup:start_link().
+start(_Opts) -> hecate_mail_sup:start_link().
 
 stop(_State) -> ok.
 
@@ -65,7 +65,7 @@ capabilities() -> [].
 %% hangs under, and a scope costs nothing while a rename costs every deployed
 %% peer.
 identity_spec() ->
-    #{scope => <<"hecate-mcp-mail">>,
+    #{scope => <<"hecate-mail">>,
       actions => [],
       resources => [],
       ttl_days => 30}.
@@ -80,7 +80,7 @@ identity_spec() ->
 %% `config/sys.config.src', and nothing makes them agree by itself. Disagreeing
 %% opens one store and addresses another. A generated test compares the two.
 -spec store_id() -> atom().
-store_id() -> hecate_mcp_mail_store.
+store_id() -> hecate_mail_store.
 
 %% @doc Where it lives on disk.
 %%
@@ -92,6 +92,6 @@ store_id() -> hecate_mcp_mail_store.
 -spec data_dir() -> string().
 data_dir() -> chosen(os:getenv("HECATE_DATA_DIR")).
 
-chosen(false) -> "/tmp/hecate_mcp_mail";
-chosen("") -> "/tmp/hecate_mcp_mail";
+chosen(false) -> "/tmp/hecate_mail";
+chosen("") -> "/tmp/hecate_mail";
 chosen(Path) -> Path.

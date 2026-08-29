@@ -1,0 +1,17 @@
+{application, hecate_mail, [
+    {description, "Async mailboxes for the Macula mesh -- lets an agent delegate work to a citizen who is not online right now"},
+    {vsn, "0.1.0"},
+    {registered, [hecate_mail_sup]},
+    {mod, {hecate_mail_app, []}},
+    {applications, [
+        kernel,
+        stdlib,
+        crypto,
+        %% Mesh SDK, realm identity, capabilities, health.
+        hecate_om
+    ]},
+    {env, []},
+    {modules, []},
+    {licenses, ["Apache-2.0"]},
+    {links, [{"GitHub", "https://github.com/hecate-services/hecate-mail"}]}
+]}.

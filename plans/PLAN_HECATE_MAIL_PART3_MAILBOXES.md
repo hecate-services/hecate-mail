@@ -71,7 +71,7 @@ to want something `barrel_docdb` can't do well.
 | `get_mailbox_by_citizen/` | All unarchived letters for a DID, unread first, newest first |
 | `get_letter_by_id/` | One letter's full content |
 
-Exposed as `hecate_mcp_mail.get_mailbox` / `hecate_mcp_mail.get_letter` —
+Exposed as `hecate_mail.get_mailbox` / `hecate_mail.get_letter` —
 see the authorization section immediately below before treating these as
 safe to expose as-is.
 

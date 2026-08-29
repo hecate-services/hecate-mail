@@ -1,10 +1,10 @@
-# hecate-mcp-mail — how to run this service.
+# hecate-mail — how to run this service.
 #
 # Runnable as-is. It carries what the SERVICE knows about itself: its image, its
 # port, the environment variables its own code reads, and its health check.
 #
 #   HECATE_REALM=<64-hex> MACULA_STATION_SEEDS=https://station.example:4433 \
-#     docker compose -p hecate-mcp-mail -f deploy/docker-compose.yml up -d
+#     docker compose -p hecate-mail -f deploy/docker-compose.yml up -d
 #
 # IF YOU DEPLOY THROUGH SOMETHING ELSE, keep this file anyway and let the other
 # thing carry PLACEMENT: which host, which station, which realm, which secret
@@ -13,9 +13,9 @@
 # nothing checking them.
 
 services:
-  hecate-mcp-mail:
-    image: ghcr.io/hecate-services/hecate-mcp-mail:latest
-    container_name: hecate-mcp-mail
+  hecate-mail:
+    image: ghcr.io/hecate-services/hecate-mail:latest
+    container_name: hecate-mail
     restart: unless-stopped
     # HOST NETWORKING IS NOT LAZINESS. macula stations are reachable over IPv6
     # only, and a default docker bridge has no IPv6, so a bridged container
@@ -31,7 +31,7 @@ services:
       # ON A BULK DRIVE, NOT THE ROOT FILESYSTEM, on any fleet node. Those boot
       # from a small eMMC with a root partition measured in single-digit gigabytes
       # and keep application data on /bulk0.
-      - ${HECATE_DATA:-/bulk0/hecate-mcp-mail}:/data
+      - ${HECATE_DATA:-/bulk0/hecate-mail}:/data
     labels:
       # Only meaningful if you run watchtower: it pulls a new :latest and
       # recreates the container. Harmless otherwise.
@@ -43,11 +43,11 @@ services:
       # No default either: naming a realm costs nothing, dialling somebody's
       # production station from every dev clone does.
       - MACULA_STATION_SEEDS=${MACULA_STATION_SEEDS:?set MACULA_STATION_SEEDS to a station URL}
-      - HECATE_NODE_NAME=hecate_mcp_mail
+      - HECATE_NODE_NAME=hecate_mail
       - HECATE_NODE_HOST=127.0.0.1
-      - HECATE_COOKIE=hecate_mcp_mail
+      - HECATE_COOKIE=hecate_mail
       # Host networking means a port already bound on this host fails SILENTLY.
       - HECATE_HEALTH_PORT=8490
       # Where the store lands, matching the volume above. `store_id/0' is
-      # appended by hecate_om, so the store itself is at /data/hecate_mcp_mail_store.
+      # appended by hecate_om, so the store itself is at /data/hecate_mail_store.
       - HECATE_DATA_DIR=/data

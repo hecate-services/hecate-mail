@@ -1,6 +1,6 @@
-# hecate-mcp-mail
+# hecate-mail
 #
-# Async mailboxes and a citizens directory for the Macula mesh -- lets an agent delegate work to a citizen who is not online right now, and discover who else is out there
+# Async mailboxes for the Macula mesh -- lets an agent delegate work to a citizen who is not online right now
 #
 # NO DATA VOLUME AS GENERATED. The scaffold writes nothing, and a named volume
 # for data that does not exist is a promise the image cannot keep. Add one
@@ -55,7 +55,7 @@ FROM docker.io/alpine:3.22
 # repository page and does not inherit its visibility. A service that shipped
 # private by accident failed its first pull with a bare "unauthorized", which
 # names nothing and sends you looking in the wrong place.
-LABEL org.opencontainers.image.source="https://github.com/hecate-services/hecate-mcp-mail"
+LABEL org.opencontainers.image.source="https://github.com/hecate-services/hecate-mail"
 # zstd-libs/snappy/lz4-libs: the RUNTIME shared libraries for rocksdb's
 # compression backends, compiled against in the builder stage above via
 # their -dev packages. Missing here crashes the release outright on
@@ -66,14 +66,14 @@ LABEL org.opencontainers.image.source="https://github.com/hecate-services/hecate
 RUN apk add --no-cache ncurses-libs libstdc++ libgcc openssl ca-certificates curl \
         zstd-libs snappy lz4-libs
 WORKDIR /app
-COPY --from=builder /build/_build/prod/rel/hecate_mcp_mail ./
+COPY --from=builder /build/_build/prod/rel/hecate_mail ./
 
 ENV HOME=/app
 ENV RELX_REPLACE_OS_VARS=true
 
-ENV HECATE_NODE_NAME=hecate_mcp_mail
+ENV HECATE_NODE_NAME=hecate_mail
 ENV HECATE_NODE_HOST=127.0.0.1
-ENV HECATE_COOKIE=hecate_mcp_mail
+ENV HECATE_COOKIE=hecate_mail
 ENV HECATE_HEALTH_PORT=8490
 
 VOLUME ["/etc/hecate/secrets"]
@@ -82,4 +82,4 @@ EXPOSE 8490
 HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
     CMD curl -fsS "http://127.0.0.1:${HECATE_HEALTH_PORT}/health" || exit 1
 
-CMD ["/app/bin/hecate_mcp_mail", "foreground"]
+CMD ["/app/bin/hecate_mail", "foreground"]

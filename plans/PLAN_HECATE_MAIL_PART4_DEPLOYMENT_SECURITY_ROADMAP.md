@@ -15,7 +15,7 @@ surfaced that this was wrong, not just informal:
 > infrastructure node rather than on a user's laptop. A laptop is a citizen:
 > it consults services across the mesh, it does not host them."
 
-So `hecate-mcp-mail` needs a real deployment target from day one — a
+So `hecate-mail` needs a real deployment target from day one — a
 realm-provisioned service principal, on infrastructure the realm owns (per
 this workspace's own deployment conventions: `beam00-03`, docker +
 watchtower; or `msi00`, podman + Quadlet). This doesn't block *development*
@@ -29,7 +29,7 @@ properly," not "leave a process running in a terminal."
    `identity_spec/0`:
    ```erlang
    identity_spec() ->
-       #{scope => <<"hecate-mcp-mail">>,
+       #{scope => <<"hecate-mail">>,
          actions => [<<"register_mailbox">>, <<"get_citizen_mail_location">>,
                      <<"deposit_letter">>, <<"get_mailbox">>, <<"get_letter">>],
          resources => [<<"mail_locations/*">>, <<"mailboxes/*">>],
@@ -38,7 +38,7 @@ properly," not "leave a process running in a terminal."
    Ask for exactly what's advertised, per this workspace's own stated
    reasoning for that field: a popped credential should grant exactly this
    and nothing more.
-2. Credential lands at `/etc/hecate/secrets/hecate-mcp-mail/`, mounted into
+2. Credential lands at `/etc/hecate/secrets/hecate-mail/`, mounted into
    the container — the same `hecate_realm_session:provision_from_inherited_creds/2`
    path every other headless service uses (v1: manual/scripted; v2, per
    `identity_model.md`'s own roadmap, the `/api/v1/services/provision`
@@ -58,7 +58,7 @@ PART2's federation design isn't there for redundancy theater — a second (or
 third) instance, run by a different party, is what actually makes "the
 directory" mean something beyond "whoever happens to run the one copy." A
 cooperative-contributed node (per `identity_model.md`'s own "first
-non-Tienen service node" framing) running its own `hecate-mcp-mail` and
+non-Tienen service node" framing) running its own `hecate-mail` and
 federating with the original is the natural shape once this is proven —
 each instance is still a properly-provisioned institution, none of them a
 citizen's laptop; federation is between institutions, not a workaround for

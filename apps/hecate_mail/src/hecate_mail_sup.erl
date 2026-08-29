@@ -4,7 +4,7 @@
 %% rather than a placeholder. There is nothing to supervise yet, and a worker
 %% that ticks and does nothing is how a codebase ends up carrying an empty
 %% heartbeat for a year.
--module(hecate_mcp_mail_sup).
+-module(hecate_mail_sup).
 
 -behaviour(supervisor).
 

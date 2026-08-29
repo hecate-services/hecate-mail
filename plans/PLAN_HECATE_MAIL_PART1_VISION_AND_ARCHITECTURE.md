@@ -37,7 +37,7 @@ Two consequences an agent hits immediately:
    they run today advertises a procedure on their behalf while they're away
    from the keyboard.
 
-`hecate-mcp-mail` is a real, always-on citizen that fixes both: it maintains
+`hecate-mail` is a real, always-on citizen that fixes both: it maintains
 the directory (1), and it gives every citizen an address that holds mail for
 them until they're back (2).
 
@@ -49,7 +49,7 @@ services "peers of citizens" instead of infrastructure citizens rely on:
 
 | | **Citizens** | **Institutions** |
 |---|---|---|
-| Who | Users — a person's Claude Code session, `hecate-daemon`, any MCP client acting on someone's behalf | Services — `hecate-rag`, `hecate-llm`, and now `hecate-mcp-mail` |
+| Who | Users — a person's Claude Code session, `hecate-daemon`, any MCP client acting on someone's behalf | Services — `hecate-rag`, `hecate-llm`, and now `hecate-mail` |
 | Credential | Realm-issued personal cert, mortal and mobile | Realm-issued service-principal cert, persistent, "the badge stays with the building, not the person" |
 | Runs on | A citizen's own laptop/session | Realm-owned infrastructure — never a citizen's laptop |
 | What "directory" means here | The set of *citizens* who have registered a mailbox (people/agents reachable this way) | N/A — institutions don't need a directory of each other for this use case |
@@ -110,14 +110,14 @@ PLAN_ROOT.md's decisions log for the full reasoning. What's left in this
 repo is mail-location routing (thin, mail-specific) plus mailboxes:
 
 ```
-   hecate-citizens (separate service, separate repo)       hecate-mcp-mail (this repo)
+   hecate-citizens (separate service, separate repo)       hecate-mail (this repo)
    ┌───────────────────────────────────┐                   ┌──────────────────────────────────────────────┐
    │ register_presence ───▶            │                   │                                              │
    │ (RPC, self-serve)                 │  register_mailbox ───▶ │  MAIL-LOCATION DIRECTORY (read-model, no store) │
    │ IDENTITY (read-model, no store)   │  (RPC, self-serve)     │  - barrel_docdb, like hecate-stations           │
    │ - citizen_did, display_name,      │                        │  - fed by: local self-registration              │
    │   offers, expires_at              │  mail_location    ───▶ │           + federated facts from other          │
-   │ - federated across instances      │  (pubsub, federation)  │             hecate-mcp-mail instances           │
+   │ - federated across instances      │  (pubsub, federation)  │             hecate-mail instances           │
    │   via mesh facts                  │                        │  - citizen_did, hosted_at, expires_at ONLY      │
    │                                    │  get_citizen_mail_     │    (no identity fields -- see PART2)            │
    │ list_citizens     ◀───            │  location         ◀─── │                                                  │
@@ -139,8 +139,8 @@ Every capability in both services is exposed the same way —
 `macula-mcp`'s side, every operation above is just an ordinary `mesh_call`,
 to whichever service owns it. Nothing about this design requires or
 benefits from macula-mcp changes; see PLAN_ROOT.md's closing note. This
-repo calls `hecate-citizens` only for optional identity lookups (display
-name, confirming a DID is known) — never as a write dependency; see PART2.
+repo consumes `hecate-citizens` only for optional identity lookups (display
+name, confirming a DID is known) — never on the write side; see PART2.
 
 ## Naming, per this workspace's own conventions
 
@@ -152,9 +152,9 @@ genuinely broad — multiple operations on one entity lifecycle").
 
 | App | Kind | Owns |
 |---|---|---|
-| `hecate_mcp_mail` | Service shell (generated) | Boot, `hecate_om_service` callbacks, health, capability list |
+| `hecate_mail` | Service shell (generated) | Boot, `hecate_om_service` callbacks, health, capability list |
 | `manage_mailboxes` | CMD | `deposit_letter/`, `mark_letter_read/`, `reply_to_letter/`, `archive_letter/` |
 | `query_mailboxes` | QRY+PRJ | `get_mailbox_by_citizen/`, `get_letter_by_id/`, the `letter_*_v1_to_mailboxes` projections |
-| *(mail-location directory)* | Lives directly in `hecate_mcp_mail` alongside the service module, hecate-stations-style — no separate CMD/QRY app, pure read-model mirroring plus one self-serve RPC | `register_mailbox` handler, the Listener/Policy/Projection triple, `get_citizen_mail_location` handler |
+| *(mail-location directory)* | Lives directly in `hecate_mail` alongside the service module, hecate-stations-style — no separate CMD/QRY app, pure read-model mirroring plus one self-serve RPC | `register_mailbox` handler, the Listener/Policy/Projection triple, `get_citizen_mail_location` handler |
 
 See PART2 and PART3 for the full desk/command/event lists.

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Ask a running hecate-mcp-mail how it is.
+# Ask a running hecate-mail how it is.
 #
 # Defaults to the local node on the port the image exposes. Pass a host to reach
 # one on another host, for example:

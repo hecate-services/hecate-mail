@@ -1,4 +1,4 @@
-# hecate-mcp-mail — Plan Index
+# hecate-mail — Plan Index
 
 **Status: Planning. Scaffold generated (`rebar3 new hecate_service`), builds. No
 domain code written yet — this plan is the specification for it.**
@@ -9,7 +9,7 @@ domain code written yet — this plan is the specification for it.**
 something already advertised on the mesh, but nothing in `macula-cli` can
 *advertise* — so an agent has no way to reach another party who isn't already
 running a real service, and no way to find out who else is even out there.
-`hecate-mcp-mail` is that missing piece: a real, standing Hecate service (an
+`hecate-mail` is that missing piece: a real, standing Hecate service (an
 institution, not a laptop) that (1) keeps a directory of citizens who've
 registered a mailbox, and (2) lets one citizen drop an addressed letter for
 another who isn't online right now, so delegation across two ephemeral Claude
@@ -31,8 +31,8 @@ Traced directly from a live conversation on `macula-io/macula-mcp`
    because `macula-go-sdk` has no peer-listing API, and a Claude Code session
    is interactive/ephemeral, never a standing listener.
 3. User proposed a `hecate-services/hecate-mcp-postoffice` edge service to
-   fill the gap, named it `hecate-mcp-mail` on reflection, and asked mid-plan
-   for two more things folded in here: (a) multiple `hecate-mcp-mail`
+   fill the gap, named it `hecate-mail` on reflection, and asked mid-plan
+   for two more things folded in here: (a) multiple `hecate-mail`
    instances should sync via mesh facts rather than requiring one centralized
    instance, and (b) noted a sibling idea, `hecate-services/hecate-mcp-agora`
    (a public square, not an addressed mailbox) — **out of scope for this
@@ -42,10 +42,10 @@ Traced directly from a live conversation on `macula-io/macula-mcp`
 
 | Part | Covers |
 |---|---|
-| [PART1 — Vision & Architecture](PLAN_HECATE_MCP_MAIL_PART1_VISION_AND_ARCHITECTURE.md) | The `hecate_om` substrate this is built on, correct Hecate vocabulary (citizen vs. institution), the two-piece shape (directory + mailboxes), what already exists vs. what this repo adds |
-| [PART2 — Mail-Location Directory](PLAN_HECATE_MCP_MAIL_PART2_MAIL_LOCATION_DIRECTORY.md) | **Revised:** identity moved to [`hecate-citizens`](https://github.com/hecate-services/hecate-citizens); this part now covers only the thin mail-routing directory (which instance hosts a citizen's mailbox), federation via mesh facts, Listener/Policy/Projection, TTL-based staleness |
-| [PART3 — Mailboxes](PLAN_HECATE_MCP_MAIL_PART3_MAILBOXES.md) | Event-sourced CMD/PRJ design, aggregate/stream shape, commands/events, QRY desks, the open caller-identity-verification question flagged honestly, not hand-waved |
-| [PART4 — Deployment, Security, Roadmap](PLAN_HECATE_MCP_MAIL_PART4_DEPLOYMENT_SECURITY_ROADMAP.md) | Why this can't run on a laptop, service-principal provisioning, what's explicitly deferred, phased build order |
+| [PART1 — Vision & Architecture](PLAN_HECATE_MAIL_PART1_VISION_AND_ARCHITECTURE.md) | The `hecate_om` substrate this is built on, correct Hecate vocabulary (citizen vs. institution), the two-piece shape (directory + mailboxes), what already exists vs. what this repo adds |
+| [PART2 — Mail-Location Directory](PLAN_HECATE_MAIL_PART2_MAIL_LOCATION_DIRECTORY.md) | **Revised:** identity moved to [`hecate-citizens`](https://github.com/hecate-services/hecate-citizens); this part now covers only the thin mail-routing directory (which instance hosts a citizen's mailbox), federation via mesh facts, Listener/Policy/Projection, TTL-based staleness |
+| [PART3 — Mailboxes](PLAN_HECATE_MAIL_PART3_MAILBOXES.md) | Event-sourced CMD/PRJ design, aggregate/stream shape, commands/events, QRY desks, the open caller-identity-verification question flagged honestly, not hand-waved |
+| [PART4 — Deployment, Security, Roadmap](PLAN_HECATE_MAIL_PART4_DEPLOYMENT_SECURITY_ROADMAP.md) | Why this can't run on a laptop, service-principal provisioning, what's explicitly deferred, phased build order |
 
 ## Decisions log
 
@@ -59,9 +59,9 @@ Traced directly from a live conversation on `macula-io/macula-mcp`
 
 ## Relationship to `hecate-citizens`
 
-This repo depends on [`hecate-citizens`](https://github.com/hecate-services/hecate-citizens)
+This repo consumes [`hecate-citizens`](https://github.com/hecate-services/hecate-citizens)
 for identity (is this DID a known citizen, what's their display name) —
-see PART2 for the revised split. `hecate-mcp-mail` does not embed or
+see PART2 for the revised split. `hecate-mail` does not embed or
 federate its own copy of that data; it keeps only its own mail-specific
 routing directory (which instance hosts a citizen's mailbox).
 
@@ -74,7 +74,7 @@ idea (same shape as `hecate-spartan`'s own `publish_to_agora` concept,
 generalized), and it would depend on `hecate-citizens` for identity the
 same way this repo now does. **Deliberately not scaffolded or planned
 here** — the task that produced this repo was specifically
-`hecate-mcp-mail`; agora deserves its own plan, written when it's actually
+`hecate-mail`; agora deserves its own plan, written when it's actually
 being started, not bolted onto this one to save a conversation turn.
 
 ## Relationship to `macula-mcp`

@@ -1,4 +1,4 @@
-## Node identity and runtime flags for hecate_mcp_mail.
+## Node identity and runtime flags for hecate_mail.
 -name ${HECATE_NODE_NAME}@${HECATE_NODE_HOST}
 -setcookie ${HECATE_COOKIE}
 

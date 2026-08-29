@@ -1,4 +1,4 @@
-# Build the OCI image for hecate-mcp-mail and push to the registry.
+# Build the OCI image for hecate-mail and push to the registry.
 #
 # Pushes BOTH :latest and the semver tag. The deployed compose tracks :latest
 # under watchtower for zero-touch deploys, and the semver tags stay published so a
@@ -50,5 +50,5 @@ jobs:
           file: Containerfile
           push: true
           tags: |
-            ghcr.io/hecate-services/hecate-mcp-mail:latest
-            ghcr.io/hecate-services/hecate-mcp-mail:${{ steps.tag.outputs.tag }}
+            ghcr.io/hecate-services/hecate-mail:latest
+            ghcr.io/hecate-services/hecate-mail:${{ steps.tag.outputs.tag }}

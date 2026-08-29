@@ -11,12 +11,12 @@
 %% shapes hecate_om will destructure, and that the names and version this service
 %% reports are the ones it actually has. Nothing local boots hecate_om, so
 %% asserting the shape by hand is the closest available thing to a rehearsal.
--module(hecate_mcp_mail_service_tests).
+-module(hecate_mail_service_tests).
 
 -include_lib("eunit/include/eunit.hrl").
 
--define(APP, hecate_mcp_mail).
--define(SERVICE, hecate_mcp_mail_service).
+-define(APP, hecate_mail).
+-define(SERVICE, hecate_mail_service).
 
 %% Belt and braces with the behaviour attribute, and it survives the attribute
 %% being removed. If hecate_om ever adds a SEVENTH required callback this test
@@ -35,7 +35,7 @@ info_carries_the_three_keys_test() ->
     ?assert(is_binary(Name)),
     ?assert(is_binary(Vsn)),
     ?assert(is_binary(Desc)),
-    ?assertEqual(<<"hecate-mcp-mail">>, Name).
+    ?assertEqual(<<"hecate-mail">>, Name).
 
 %% THE TWO NAMES MUST AGREE. The OTP application is snake_case because it is an
 %% Erlang atom; the repository, the container image and the name this service
@@ -85,7 +85,7 @@ authority_matches_what_is_announced_test() ->
 %% no children as generated; this asserts the tree is startable, not that it does
 %% any work.
 supervisor_starts_and_stops_test() ->
-    {ok, Pid} = hecate_mcp_mail_sup:start_link(),
+    {ok, Pid} = hecate_mail_sup:start_link(),
     ?assert(is_process_alive(Pid)),
     ?assertEqual([], supervisor:which_children(Pid)),
     unlink(Pid),
