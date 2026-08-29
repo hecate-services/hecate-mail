@@ -61,8 +61,9 @@ health_is_green_test() ->
 %% An empty list is the correct answer for a service that does nothing yet. The
 %% assertion is here so that adding a capability breaks a test and makes someone
 %% write down what the service can now actually do.
-announces_no_capability_yet_test() ->
-    ?assertEqual([], ?SERVICE:capabilities()).
+announces_open_mailbox_and_deposit_letter_test() ->
+    Names = [maps:get(name, C) || C <- ?SERVICE:capabilities()],
+    ?assertEqual([<<"hecate_mail.open_mailbox">>, <<"hecate_mail.deposit_letter">>], Names).
 
 identity_spec_has_the_shape_hecate_om_expects_test() ->
     #{scope := Scope, actions := Actions,
@@ -72,14 +73,16 @@ identity_spec_has_the_shape_hecate_om_expects_test() ->
     ?assert(is_list(Resources)),
     ?assert(is_integer(Ttl) andalso Ttl > 0).
 
-%% A resource this service is not authorised for is a publish the realm would
-%% refuse once UCAN delegation lands. Asking for nothing and claiming nothing
-%% must stay in step, so the two are asserted together.
+%% A capability this service didn't ask authority for is a call the realm
+%% would refuse once UCAN delegation lands -- every announced capability's
+%% short name (the part after the scope prefix) must appear in `actions`.
 authority_matches_what_is_announced_test() ->
-    #{actions := Actions, resources := Resources} = ?SERVICE:identity_spec(),
-    ?assertEqual([], ?SERVICE:capabilities()),
-    ?assertEqual([], Actions),
-    ?assertEqual([], Resources).
+    #{actions := Actions} = ?SERVICE:identity_spec(),
+    ShortNames = [begin
+        <<"hecate_mail.", Short/binary>> = maps:get(name, C),
+        Short
+    end || C <- ?SERVICE:capabilities()],
+    ?assertEqual(lists:sort(ShortNames), lists:sort(Actions)).
 
 %% The supervisor starts and stops cleanly on its own, without hecate_om. It has
 %% no children as generated; this asserts the tree is startable, not that it does

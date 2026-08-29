@@ -55,19 +55,31 @@ health() -> ok.
 
 %% WHAT THIS SERVICE ANNOUNCES IT CAN DO. Other services find this one by these
 %% names, so each entry is a promise that something answers.
-capabilities() -> [].
+%%
+%% Only two of guide_mailbox_lifecycle's six commands are reachable over the
+%% mesh so far, deliberately: open_mailbox and deposit_letter disclose
+%% nothing about a mailbox's contents to call safely with self-asserted
+%% identity. mark_letter_read/reply_to_letter/archive_letter/close_mailbox
+%% and any future get_mailbox/get_letter query are gated behind resolving
+%% whether a macula_response handler gets verified caller identity -- see
+%% plans/PLAN_HECATE_MAIL_PART3_MAILBOXES.md's open question. Until then
+%% those commands are real, tested domain code (rebar3 eunit exercises
+%% them directly) with no RPC surface, not stubs.
+capabilities() ->
+    [
+     #{name => <<"hecate_mail.open_mailbox">>, version => 1,
+       handler => {open_mailbox_responder, []}},
+     #{name => <<"hecate_mail.deposit_letter">>, version => 1,
+       handler => {deposit_letter_responder, []}}
+    ].
 
 %% THE AUTHORITY THIS SERVICE ASKS THE REALM FOR, and deliberately nothing more.
 %% Ask for exactly the topics you publish and subscribe to. Popped, an attacker
 %% gains precisely this and no more, which is the whole point of listing it.
-%%
-%% The scope is claimed now because it is the namespace every later resource
-%% hangs under, and a scope costs nothing while a rename costs every deployed
-%% peer.
 identity_spec() ->
     #{scope => <<"hecate-mail">>,
-      actions => [],
-      resources => [],
+      actions => [<<"open_mailbox">>, <<"deposit_letter">>],
+      resources => [<<"mailboxes/*">>],
       ttl_days => 30}.
 
 %% ==========================================================================

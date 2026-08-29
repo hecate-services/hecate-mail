@@ -8,7 +8,11 @@
         stdlib,
         crypto,
         %% Mesh SDK, realm identity, capabilities, health.
-        hecate_om
+        hecate_om,
+        %% The domain: open/close a mailbox, deposit/read/reply/archive
+        %% letters. hecate_mail_service:capabilities/0 references its
+        %% responder modules directly.
+        guide_mailbox_lifecycle
     ]},
     {env, []},
     {modules, []},

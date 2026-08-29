@@ -1,0 +1,18 @@
+{application, guide_mailbox_lifecycle, [
+    {description, "CMD service: open/close a citizen's mailbox, deposit/read/reply/archive letters (mailbox-{citizen_did} stream)"},
+    {vsn, "0.1.0"},
+    {registered, []},
+    {mod, {guide_mailbox_lifecycle_app, []}},
+    {applications, [
+        kernel,
+        stdlib,
+        crypto,
+        reckon_db,
+        evoq,
+        reckon_evoq
+    ]},
+    {env, []},
+    {modules, []},
+    {licenses, ["Apache-2.0"]},
+    {links, []}
+]}.
