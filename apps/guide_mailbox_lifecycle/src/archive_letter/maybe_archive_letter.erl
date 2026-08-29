@@ -1,8 +1,9 @@
 %%% @doc Handler for `archive_letter_v1`.
 %%%
-%%% Business rule: mailbox open, letter exists. Archiving an
-%%% already-archived letter is idempotent (`{ok, []}`), same reasoning as
-%%% `maybe_mark_letter_read`.
+%%% The mailbox-open guard lives in the aggregate
+%%% (`mailbox_aggregate:guard_open/2'); the letter-existence check stays
+%%% here. Archiving an already-archived letter is idempotent (`{ok, []}`),
+%%% same reasoning as `maybe_mark_letter_read`.
 %%% @end
 -module(maybe_archive_letter).
 
@@ -20,15 +21,8 @@ handle_from_map(State, Payload) ->
 -spec handle(mailbox_state:state(), archive_letter_v1:t()) -> {ok, [map()]} | {error, term()}.
 handle(State, Cmd) ->
     case archive_letter_v1:validate(Cmd) of
-        ok -> decide(State, Cmd);
+        ok -> decide_letter(State, Cmd);
         {error, _} = E -> E
-    end.
-
-decide(State, Cmd) ->
-    case mailbox_state:status(State) of
-        open -> decide_letter(State, Cmd);
-        closed -> {error, mailbox_closed};
-        unopened -> {error, mailbox_not_opened}
     end.
 
 decide_letter(State, Cmd) ->

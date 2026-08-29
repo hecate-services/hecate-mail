@@ -1,7 +1,8 @@
 %%% @doc Handler for `reply_to_letter_v1`.
 %%%
-%%% Business rule: mailbox open, original letter exists and isn't
-%%% archived. `original_sender_did` comes from the ALREADY-LOADED
+%%% The mailbox-open guard lives in the aggregate
+%%% (`mailbox_aggregate:guard_open/2'); the original-letter lookup stays
+%%% here. `original_sender_did` comes from the ALREADY-LOADED
 %%% aggregate state (the original letter is right there, since it's
 %%% stored in THIS mailbox) -- never from caller input, so a replier
 %%% cannot misdirect a reply to someone other than who actually sent it.
@@ -29,15 +30,8 @@ handle_from_map(State, Payload) ->
 -spec handle(mailbox_state:state(), reply_to_letter_v1:t()) -> {ok, [map()]} | {error, term()}.
 handle(State, Cmd) ->
     case reply_to_letter_v1:validate(Cmd) of
-        ok -> decide(State, Cmd);
+        ok -> decide_letter(State, Cmd);
         {error, _} = E -> E
-    end.
-
-decide(State, Cmd) ->
-    case mailbox_state:status(State) of
-        open -> decide_letter(State, Cmd);
-        closed -> {error, mailbox_closed};
-        unopened -> {error, mailbox_not_opened}
     end.
 
 decide_letter(State, Cmd) ->

@@ -1,37 +1,31 @@
-%%% @doc Handler for `close_mailbox_v1`.
+%%% @doc Handler for `close_mailbox_v1'.
 %%%
-%%% Business rule: only an open mailbox can be closed. Closing letters'
-%%% own state is untouched -- they stay exactly as they were (read or
-%%% not, archived or not) so re-opening later shows the mailbox as it
-%%% was left, not wiped.
+%%% Pure: the `not_initiated'/`archived'/`not_open' guards live in the
+%%% aggregate. Closing leaves letters' own state untouched -- they stay
+%%% exactly as they were (read or not, archived or not) so re-opening
+%%% later shows the mailbox as it was left, not wiped.
 %%% @end
 -module(maybe_close_mailbox).
 
--export([handle_from_map/2, handle/2, dispatch/1]).
+-export([handle_from_map/1, handle/1, dispatch/1]).
 
 -include_lib("evoq/include/evoq.hrl").
 
--spec handle_from_map(mailbox_state:state(), map()) -> {ok, [map()]} | {error, term()}.
-handle_from_map(State, Payload) ->
+-spec handle_from_map(map()) -> {ok, [map()]} | {error, term()}.
+handle_from_map(Payload) ->
     case close_mailbox_v1:from_map(Payload) of
-        {ok, Cmd} -> handle(State, Cmd);
+        {ok, Cmd} -> handle(Cmd);
         {error, _} = E -> E
     end.
 
--spec handle(mailbox_state:state(), close_mailbox_v1:t()) -> {ok, [map()]} | {error, term()}.
-handle(State, Cmd) ->
+-spec handle(close_mailbox_v1:t()) -> {ok, [map()]} | {error, term()}.
+handle(Cmd) ->
     case close_mailbox_v1:validate(Cmd) of
-        ok -> decide(mailbox_state:status(State), Cmd);
+        ok ->
+            Event = mailbox_closed_v1:new(#{citizen_did => close_mailbox_v1:get_citizen_did(Cmd)}),
+            {ok, [mailbox_closed_v1:to_map(Event)]};
         {error, _} = E -> E
     end.
-
-decide(open, Cmd) ->
-    Event = mailbox_closed_v1:new(#{citizen_did => close_mailbox_v1:get_citizen_did(Cmd)}),
-    {ok, [mailbox_closed_v1:to_map(Event)]};
-decide(closed, _Cmd) ->
-    {error, not_open};
-decide(unopened, _Cmd) ->
-    {error, not_open}.
 
 %% @doc Dispatch via evoq -- persists the produced event.
 -spec dispatch(close_mailbox_v1:t()) -> {ok, non_neg_integer(), [map()]} | {error, term()}.

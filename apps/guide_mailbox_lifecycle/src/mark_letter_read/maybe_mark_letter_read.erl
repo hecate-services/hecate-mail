@@ -1,9 +1,12 @@
 %%% @doc Handler for `mark_letter_read_v1`.
 %%%
-%%% Business rule: the mailbox must be open, and the letter must exist.
-%%% Marking an already-read letter read again is idempotent (`{ok, []}`,
-%%% no new event) rather than an error -- a caller re-fetching a mailbox
-%%% and re-marking read shouldn't need to track what it already marked.
+%%% The mailbox-open guard lives in the aggregate
+%%% (`mailbox_aggregate:guard_open/2'); the letter-existence check stays
+%%% here since it needs to look inside state at THIS mailbox's letters,
+%%% something the aggregate's own flag-only guards don't do. Marking an
+%%% already-read letter read again is idempotent (`{ok, []}`, no new
+%%% event) rather than an error -- a caller re-fetching a mailbox and
+%%% re-marking read shouldn't need to track what it already marked.
 %%% @end
 -module(maybe_mark_letter_read).
 
@@ -21,15 +24,8 @@ handle_from_map(State, Payload) ->
 -spec handle(mailbox_state:state(), mark_letter_read_v1:t()) -> {ok, [map()]} | {error, term()}.
 handle(State, Cmd) ->
     case mark_letter_read_v1:validate(Cmd) of
-        ok -> decide(State, Cmd);
+        ok -> decide_letter(State, Cmd);
         {error, _} = E -> E
-    end.
-
-decide(State, Cmd) ->
-    case mailbox_state:status(State) of
-        open -> decide_letter(State, Cmd);
-        closed -> {error, mailbox_closed};
-        unopened -> {error, mailbox_not_opened}
     end.
 
 decide_letter(State, Cmd) ->
