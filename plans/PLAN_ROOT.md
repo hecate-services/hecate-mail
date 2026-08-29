@@ -43,7 +43,7 @@ Traced directly from a live conversation on `macula-io/macula-mcp`
 | Part | Covers |
 |---|---|
 | [PART1 — Vision & Architecture](PLAN_HECATE_MCP_MAIL_PART1_VISION_AND_ARCHITECTURE.md) | The `hecate_om` substrate this is built on, correct Hecate vocabulary (citizen vs. institution), the two-piece shape (directory + mailboxes), what already exists vs. what this repo adds |
-| [PART2 — Citizens Directory](PLAN_HECATE_MCP_MAIL_PART2_CITIZENS_DIRECTORY.md) | Read-model design, self-registration RPC, federation via mesh facts (the user's mid-plan addition), Listener/Policy/Projection, TTL-based staleness |
+| [PART2 — Mail-Location Directory](PLAN_HECATE_MCP_MAIL_PART2_MAIL_LOCATION_DIRECTORY.md) | **Revised:** identity moved to [`hecate-citizens`](https://github.com/hecate-services/hecate-citizens); this part now covers only the thin mail-routing directory (which instance hosts a citizen's mailbox), federation via mesh facts, Listener/Policy/Projection, TTL-based staleness |
 | [PART3 — Mailboxes](PLAN_HECATE_MCP_MAIL_PART3_MAILBOXES.md) | Event-sourced CMD/PRJ design, aggregate/stream shape, commands/events, QRY desks, the open caller-identity-verification question flagged honestly, not hand-waved |
 | [PART4 — Deployment, Security, Roadmap](PLAN_HECATE_MCP_MAIL_PART4_DEPLOYMENT_SECURITY_ROADMAP.md) | Why this can't run on a laptop, service-principal provisioning, what's explicitly deferred, phased build order |
 
@@ -55,6 +55,15 @@ Traced directly from a live conversation on `macula-io/macula-mcp`
 | 2026-08-29 | One service or two (directory vs. mailboxes)? | **One service, two internal concerns.** Same repo, same OTP release — `hecate-stations` already proves a single service can be read-model-only; this one additionally owns a `reckon-db` store for mailboxes. Splitting into two deployable services is possible later if operational reasons demand it, not designed in from day one on spec. |
 | 2026-08-29 | Does mail content get federated across instances? | **No — only presence/directory facts federate.** A letter lives solely on the instance the recipient is registered at (learned from the federated directory's `hosted_at` field); depositing means calling that specific instance directly, not broadcasting the letter itself. Federating letter contents would mean every instance holds a copy of everyone's mail, which is a real privacy regression nobody asked for. |
 | 2026-08-29 | Where does this run? | **Realm-owned infrastructure, not a user's laptop** — `hecate_om`'s own `identity_model.md` is explicit that a Hecate service is an institution with its own service-principal credential, never a citizen-bound process. See PART4. |
+| 2026-08-29 | Should identity (the citizens directory) live in this repo? | **No, moved to [`hecate-citizens`](https://github.com/hecate-services/hecate-citizens).** The moment `hecate-mcp-agora` was named as a real next consumer of the same identity data, keeping it embedded here meant two services would each federate their own copy — a real divergence risk, not a hypothetical one. Extracted before either service's directory code existed, not after. "One more standing service" was raised and explicitly rejected as a reason not to — this ecosystem is already collaborating microservices, and a shared directory used by more than one of them is exactly what that architecture is for. This repo now owns only mail-specific routing (which instance hosts a mailbox) — see PART2. |
+
+## Relationship to `hecate-citizens`
+
+This repo depends on [`hecate-citizens`](https://github.com/hecate-services/hecate-citizens)
+for identity (is this DID a known citizen, what's their display name) —
+see PART2 for the revised split. `hecate-mcp-mail` does not embed or
+federate its own copy of that data; it keeps only its own mail-specific
+routing directory (which instance hosts a citizen's mailbox).
 
 ## Relationship to `hecate-mcp-agora` (not built here)
 
@@ -62,11 +71,11 @@ The user separately floated `hecate-services/hecate-mcp-agora` — a public
 square (post publicly, anyone reads, no addressing), the broadcast
 complement to this repo's addressed mailbox. It's a real, well-shaped sibling
 idea (same shape as `hecate-spartan`'s own `publish_to_agora` concept,
-generalized), and it would likely reuse this repo's citizens-directory
-pattern almost unchanged. **Deliberately not scaffolded or planned here** —
-the task that produced this repo was specifically `hecate-mcp-mail`; agora
-deserves its own plan, written when it's actually being started, not
-bolted onto this one to save a conversation turn.
+generalized), and it would depend on `hecate-citizens` for identity the
+same way this repo now does. **Deliberately not scaffolded or planned
+here** — the task that produced this repo was specifically
+`hecate-mcp-mail`; agora deserves its own plan, written when it's actually
+being started, not bolted onto this one to save a conversation turn.
 
 ## Relationship to `macula-mcp`
 

@@ -30,10 +30,9 @@ properly," not "leave a process running in a terminal."
    ```erlang
    identity_spec() ->
        #{scope => <<"hecate-mcp-mail">>,
-         actions => [<<"register_citizen">>, <<"list_citizens">>,
-                     <<"get_citizen">>, <<"deposit_letter">>,
-                     <<"get_mailbox">>, <<"get_letter">>],
-         resources => [<<"citizens/*">>, <<"mailboxes/*">>],
+         actions => [<<"register_mailbox">>, <<"get_citizen_mail_location">>,
+                     <<"deposit_letter">>, <<"get_mailbox">>, <<"get_letter">>],
+         resources => [<<"mail_locations/*">>, <<"mailboxes/*">>],
          ttl_days => 365}.
    ```
    Ask for exactly what's advertised, per this workspace's own stated
@@ -92,12 +91,16 @@ skipping provisioning.
 
 ## Phased build order
 
-**Phase 1 — Directory only.**
-`register_citizen` / `list_citizens` / `get_citizen`, the Listener/Policy/
+**Phase 0 — `hecate-citizens` ships first.** This repo's `register_mailbox`
+is meaningless without a citizen to register on behalf of, and the
+original "show me other macula citizens" ask is actually answered by
+`hecate-citizens`'s `list_citizens`, not by anything in this repo. Build
+and deploy that service before Phase 1 here.
+
+**Phase 1 — Mail-location directory.**
+`register_mailbox` / `get_citizen_mail_location`, the Listener/Policy/
 Projection federation chain, `test_live/` coverage of a real register →
-list round trip against the demo fleet. This alone already answers the
-original "show me other macula citizens" ask, independent of mailboxes
-existing yet.
+lookup round trip against the demo fleet.
 
 **Phase 2 — Mailboxes, write side first.**
 `deposit_letter` end to end (CMD → event → PRJ), because it's safe to ship
@@ -111,12 +114,10 @@ question resolves to. `reply_to_letter` and `archive_letter` land here too,
 since they're only useful once a citizen can actually see their mail.
 
 **Phase 4 — Hardening, only once Phases 1–3 have real usage to learn from.**
-Rate limiting, a periodic `barrel_docdb` purge of long-expired directory
-entries (a size optimization per `read_model_services.md`'s own note that
-this is "not a correctness requirement" — the read-time TTL filter already
-makes staleness correct with zero purge), and revisiting whether
-`hecate-mcp-agora` (PLAN_ROOT.md's noted sibling, not built here) should
-share this service's citizens-directory code or maintain its own.
+Rate limiting, and a periodic `barrel_docdb` purge of long-expired
+mail-location entries (a size optimization per `read_model_services.md`'s
+own note that this is "not a correctness requirement" — the read-time TTL
+filter already makes staleness correct with zero purge).
 
 ## Explicitly out of scope for this repo, permanently, not just "for now"
 
