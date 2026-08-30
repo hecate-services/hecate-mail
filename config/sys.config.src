@@ -8,6 +8,21 @@
         {station_socket,    "/run/macula/station.sock"},
         {health_port,       ${HECATE_HEALTH_PORT}},
         {capability_topic,  <<"_mesh.cap.">>},
+        %% MANDATORY BECAUSE THIS SERVICE ADVERTISES CAPABILITIES (see
+        %% capabilities/0 in hecate_mail_service.erl). Without this,
+        %% hecate_om_identity:keypair/0 returns {error, no_keypair} forever,
+        %% and hecate_om_capabilities:advertise_with/7's guard clause
+        %% requires {ok, KeyPair} — so it silently no-ops on every republish
+        %% tick, permanently, with no crash and no error logged. The service
+        %% still connects and calls fine (peering doesn't need a persistent
+        %% keypair), so this looks exactly like a healthy node while every
+        %% capability is unreachable. Confirmed live 2026-08-30: 5+ hours
+        %% uptime, connected => true, capabilities registered in-process, but
+        %% every mesh_call against hecate_mail.initiate_mailbox/open_mailbox/
+        %% deposit_letter failed with unknown_next_peer the entire time.
+        %% Same bug class hecate-tube already hit and fixed — see its
+        %% sys.config.src for the identical line this mirrors.
+        {identity_key_path, "${HECATE_DATA_DIR}/identity/keypair.erl.bin"},
         %% THE REALM IS AN APPLICATION ENV, NOT A SHELL VARIABLE, and this file
         %% is the only place the two meet. hecate_om_identity:realm() reads
         %% application:get_env(hecate_om, realm); exporting HECATE_REALM in the
