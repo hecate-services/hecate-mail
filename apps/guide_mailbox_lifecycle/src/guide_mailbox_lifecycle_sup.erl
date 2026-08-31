@@ -1,7 +1,7 @@
 %%% @doc Supervises this app's own processes.
 %%%
 %%% No children yet: every desk here is a stateless command/event/handler
-%%% module invoked on demand by `evoq_dispatcher` (which manages its own
+%%% module invoked on demand by `evoq_command_router` (which manages its own
 %%% aggregate-process lifecycle via the evoq application, not this
 %%% supervisor). Add a desk-owned worker/desk supervisor here if a future
 %%% slice needs one (a listener, an emitter) -- per this workspace's

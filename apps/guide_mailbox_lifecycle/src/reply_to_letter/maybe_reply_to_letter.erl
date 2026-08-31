@@ -67,7 +67,7 @@ dispatch(Cmd) ->
         payload = CmdMap,
         metadata = #{timestamp => erlang:system_time(millisecond)}
     },
-    case evoq_dispatcher:dispatch(EvoqCmd, #{
+    case evoq_command_router:dispatch(EvoqCmd, #{
         store_id => hecate_mail_store,
         adapter => reckon_evoq_adapter,
         consistency => eventual
