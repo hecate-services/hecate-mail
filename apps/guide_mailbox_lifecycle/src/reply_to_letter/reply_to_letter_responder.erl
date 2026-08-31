@@ -17,14 +17,17 @@ init(_Args) -> {ok, []}.
 
 -spec handle_request(map(), term()) -> {reply, map(), term()}.
 handle_request(Payload, State) ->
-    CitizenDid = hecate_om_wire:field(citizen_did, Payload),
+    %% citizen_did arrives as ASCII hex TEXT over the wire, decoded once
+    %% here and reused for both the proof check and the command -- see
+    %% mailbox_ownership_proof's own doc on why.
+    CitizenDid = mailbox_ownership_proof:decode_did(hecate_om_wire:field(citizen_did, Payload)),
     Proof = hecate_om_wire:field(proof, Payload, #{}),
-    Reply = proven_reply(mailbox_ownership_proof:verify(CitizenDid, Proof, ?PROCEDURE), Payload),
+    Reply = proven_reply(mailbox_ownership_proof:verify(CitizenDid, Proof, ?PROCEDURE), CitizenDid, Payload),
     {reply, Reply, State}.
 
-proven_reply(ok, Payload) ->
+proven_reply(ok, CitizenDid, Payload) ->
     Params = #{
-        citizen_did => hecate_om_wire:field(citizen_did, Payload),
+        citizen_did => CitizenDid,
         letter_id => hecate_om_wire:field(letter_id, Payload),
         subject => hecate_om_wire:field(subject, Payload, <<"">>),
         body => hecate_om_wire:field(body, Payload, <<"">>)
@@ -33,7 +36,7 @@ proven_reply(ok, Payload) ->
         {ok, Cmd} -> reply_for(reply_to_letter_v1:get_letter_id(Cmd), maybe_reply_to_letter:dispatch(Cmd));
         {error, Reason} -> #{ok => 0, error => reason_to_binary(Reason)}
     end;
-proven_reply({error, Reason}, _Payload) ->
+proven_reply({error, Reason}, _CitizenDid, _Payload) ->
     #{ok => 0, error => reason_to_binary(Reason)}.
 
 reply_for(LetterId, {ok, _Version, _Events}) ->

@@ -5,6 +5,9 @@
 %%% doesn't disclose anything (see the caller-identity-verification open
 %%% question in this repo's plans/ for why the READ side can't say the
 %%% same).
+%%%
+%%% `citizen_did' arrives as ASCII hex TEXT over the wire, decoded to
+%%% raw bytes here -- see `mailbox_ownership_proof''s own doc on why.
 %%% @end
 -module(open_mailbox_responder).
 -behaviour(macula_response).
@@ -15,7 +18,7 @@ init(_Args) -> {ok, []}.
 
 -spec handle_request(map(), term()) -> {reply, map(), term()}.
 handle_request(Payload, State) ->
-    CitizenDid = hecate_om_wire:field(citizen_did, Payload),
+    CitizenDid = mailbox_ownership_proof:decode_did(hecate_om_wire:field(citizen_did, Payload)),
     Reply = case open_mailbox_v1:new(#{citizen_did => CitizenDid}) of
         {ok, Cmd} -> reply_for(maybe_open_mailbox:dispatch(Cmd));
         {error, Reason} -> #{ok => 0, error => reason_to_binary(Reason)}

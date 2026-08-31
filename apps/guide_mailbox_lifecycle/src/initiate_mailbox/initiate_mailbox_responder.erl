@@ -3,6 +3,12 @@
 %%% Any citizen can initiate their own mailbox by DID -- no authorization
 %%% needed beyond "you're naming a DID," same trust profile as
 %%% `open_mailbox_responder'.
+%%%
+%%% `citizen_did' arrives as ASCII hex TEXT over the wire (macula-cli's
+%%% JSON->CBOR bridge sends every string as text, never bytes -- see
+%%% `mailbox_ownership_proof''s own doc), decoded to raw bytes here so
+%%% the stream this mailbox lives on (`mailbox-{citizen_did}') is
+%%% addressed consistently with every other desk.
 %%% @end
 -module(initiate_mailbox_responder).
 -behaviour(macula_response).
@@ -13,7 +19,7 @@ init(_Args) -> {ok, []}.
 
 -spec handle_request(map(), term()) -> {reply, map(), term()}.
 handle_request(Payload, State) ->
-    CitizenDid = hecate_om_wire:field(citizen_did, Payload),
+    CitizenDid = mailbox_ownership_proof:decode_did(hecate_om_wire:field(citizen_did, Payload)),
     Reply = case initiate_mailbox_v1:new(#{citizen_did => CitizenDid}) of
         {ok, Cmd} -> reply_for(maybe_initiate_mailbox:dispatch(Cmd));
         {error, Reason} -> #{ok => 0, error => reason_to_binary(Reason)}

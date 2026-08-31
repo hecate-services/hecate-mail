@@ -20,7 +20,10 @@ init(_Args) -> {ok, []}.
 
 -spec handle_request(map(), term()) -> {reply, map(), term()}.
 handle_request(Payload, State) ->
-    CitizenDid = hecate_om_wire:field(citizen_did, Payload),
+    %% citizen_did arrives as ASCII hex TEXT over the wire, decoded once
+    %% here and reused throughout -- see mailbox_ownership_proof's own
+    %% doc on why.
+    CitizenDid = mailbox_ownership_proof:decode_did(hecate_om_wire:field(citizen_did, Payload)),
     Proof = hecate_om_wire:field(proof, Payload, #{}),
     Reply = proven_reply(mailbox_ownership_proof:verify(CitizenDid, Proof, ?PROCEDURE), CitizenDid),
     {reply, Reply, State}.
