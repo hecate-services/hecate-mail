@@ -23,9 +23,16 @@
 -spec state_module() -> module().
 state_module() -> mailbox_state.
 
+%% @doc A real citizen_did is a raw 32-byte Ed25519 pubkey (not the
+%% printable placeholder strings this repo's own eunit fixtures use)
+%% -- concatenating it straight into a stream_id crashes reckon-db's
+%% own stream-path validation (`{invalid_stream_id, ...}', confirmed
+%% live), so it's hex-encoded here, matching the same convention
+%% `mailboxes_read_model'/`citizen_read_model' already use for
+%% barrel_docdb document keys.
 -spec stream_id(binary()) -> binary().
 stream_id(CitizenDid) ->
-    <<"mailbox-", CitizenDid/binary>>.
+    <<"mailbox-", (binary:encode_hex(CitizenDid, lowercase))/binary>>.
 
 init(CitizenDid) ->
     {ok, mailbox_state:new(CitizenDid)}.

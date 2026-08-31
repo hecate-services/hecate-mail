@@ -60,7 +60,10 @@ project(#{event_type := <<"letter_archived_v1">>, data := Data, stream_id := Str
 project(_Event, _Meta, State, RM) ->
     {skip, State, RM}.
 
-citizen_did(<<"mailbox-", CitizenDid/binary>>) -> CitizenDid.
+%% stream_id hex-encodes citizen_did (mailbox_aggregate:stream_id/1's
+%% own doc explains why) -- decoded back here to match what
+%% mailboxes_read_model stores/keys by.
+citizen_did(<<"mailbox-", HexDid/binary>>) -> binary:decode_hex(HexDid).
 
 field(Key, Map) when is_atom(Key) ->
     BinKey = atom_to_binary(Key, utf8),
