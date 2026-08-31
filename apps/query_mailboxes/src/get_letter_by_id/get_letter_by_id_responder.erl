@@ -19,7 +19,7 @@ handle_request(Payload, State) ->
     %% here and reused throughout -- see mailbox_ownership_proof's own
     %% doc on why.
     CitizenDid = mailbox_ownership_proof:decode_did(hecate_om_wire:field(citizen_did, Payload)),
-    LetterId = hecate_om_wire:field(letter_id, Payload),
+    LetterId = mailbox_ownership_proof:decode_text(hecate_om_wire:field(letter_id, Payload)),
     Proof = hecate_om_wire:field(proof, Payload, #{}),
     Reply = proven_reply(mailbox_ownership_proof:verify(CitizenDid, Proof, ?PROCEDURE),
                          CitizenDid, LetterId),

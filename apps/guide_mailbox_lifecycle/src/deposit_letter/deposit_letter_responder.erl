@@ -23,9 +23,9 @@ handle_request(Payload, State) ->
     Params = #{
         to_citizen_did => mailbox_ownership_proof:decode_did(hecate_om_wire:field(to_citizen_did, Payload)),
         from_did => mailbox_ownership_proof:decode_did(hecate_om_wire:field(from_did, Payload)),
-        subject => hecate_om_wire:field(subject, Payload, <<"">>),
-        body => hecate_om_wire:field(body, Payload, <<"">>),
-        reply_letter_id => hecate_om_wire:field(reply_letter_id, Payload, undefined)
+        subject => mailbox_ownership_proof:decode_text(hecate_om_wire:field(subject, Payload, <<"">>)),
+        body => mailbox_ownership_proof:decode_text(hecate_om_wire:field(body, Payload, <<"">>)),
+        reply_letter_id => mailbox_ownership_proof:decode_text(hecate_om_wire:field(reply_letter_id, Payload, undefined))
     },
     Reply = case deposit_letter_v1:new(Params) of
         {ok, Cmd} -> reply_for(Cmd, maybe_deposit_letter:dispatch(Cmd));

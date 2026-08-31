@@ -72,6 +72,34 @@ passes_through_already_raw_bytes_test() ->
 rejects_malformed_hex_as_undefined_test() ->
     ?assertEqual(undefined, mailbox_ownership_proof:decode_did(<<"not-hex-at-all-zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz">>)).
 
+%% macula's frame decoder converts a CBOR text VALUE to an atom
+%% whenever the receiving VM already knows that atom, else leaves it
+%% `{text, Bin}'-tagged (confirmed live -- see this module's own doc).
+%% decode_did/decode_text must tolerate both, on top of hex text.
+
+decode_did_unwraps_a_text_tagged_hex_string_test() ->
+    KeyPair = macula_identity:generate(),
+    Did = macula_identity:public(KeyPair),
+    HexDid = binary:encode_hex(Did, lowercase),
+    ?assertEqual(Did, mailbox_ownership_proof:decode_did({text, HexDid})).
+
+decode_text_unwraps_an_atom_value_test() ->
+    ?assertEqual(<<"hello">>, mailbox_ownership_proof:decode_text(hello)).
+
+decode_text_unwraps_a_text_tagged_value_test() ->
+    ?assertEqual(<<"hello">>, mailbox_ownership_proof:decode_text({text, <<"hello">>})).
+
+decode_text_passes_undefined_through_test() ->
+    ?assertEqual(undefined, mailbox_ownership_proof:decode_text(undefined)).
+
+accepts_a_proof_whose_signature_arrived_text_tagged_test() ->
+    KeyPair = macula_identity:generate(),
+    Did = macula_identity:public(KeyPair),
+    Ts = erlang:system_time(millisecond),
+    RawSig = macula_identity:sign(mailbox_ownership_proof:message(Did, Ts, ?PROC), KeyPair),
+    WireProof = #{timestamp => Ts, signature => {text, binary:encode_hex(RawSig, lowercase)}},
+    ?assertEqual(ok, mailbox_ownership_proof:verify(Did, WireProof, ?PROC)).
+
 %% A full proof as it actually arrives over the wire: citizen_did AND
 %% signature both hex text (what macula-cli identity sign prints and
 %% what a caller's mesh_call args carry), not raw bytes.

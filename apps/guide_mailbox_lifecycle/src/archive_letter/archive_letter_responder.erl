@@ -26,7 +26,7 @@ handle_request(Payload, State) ->
 proven_reply(ok, CitizenDid, Payload) ->
     Params = #{
         citizen_did => CitizenDid,
-        letter_id => hecate_om_wire:field(letter_id, Payload)
+        letter_id => mailbox_ownership_proof:decode_text(hecate_om_wire:field(letter_id, Payload))
     },
     case archive_letter_v1:new(Params) of
         {ok, Cmd} -> reply_for(archive_letter_v1:get_letter_id(Cmd), maybe_archive_letter:dispatch(Cmd));
