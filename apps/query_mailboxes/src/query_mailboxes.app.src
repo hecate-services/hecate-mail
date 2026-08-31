@@ -1,0 +1,11 @@
+{application, query_mailboxes, [
+    {description, "QRY: get_mailbox/get_letter read desks for hecate-mail"},
+    {vsn, "0.1.0"},
+    {registered, [query_mailboxes_sup]},
+    {mod, {query_mailboxes_app, []}},
+    {applications, [kernel, stdlib, hecate_om, guide_mailbox_lifecycle, project_mailboxes]},
+    {env, []},
+    {modules, []},
+    {licenses, ["Apache-2.0"]},
+    {links, []}
+]}.

@@ -17,6 +17,16 @@
 
 -export([info/0, start/1, stop/1, health/0, capabilities/0, identity_spec/0]).
 %% ==========================================================================
+%% AND A READ MODEL, alongside the store above
+%% ==========================================================================
+%%
+%% `project_mailboxes' writes the letter read model here directly via
+%% `barrel_docdb', keyed by this same database name -- see
+%% `hecate_om_service''s own doc on `read_model_id/0': "PRJ code writes to
+%% it with barrel_docdb directly, using this same name as the database
+%% handle -- there is no separate accessor to call first."
+-export([read_model_id/0]).
+%% ==========================================================================
 %% AND TWO OPTIONAL ONES, WHICH TURN THE STORE ON
 %% ==========================================================================
 %%
@@ -56,16 +66,18 @@ health() -> ok.
 %% WHAT THIS SERVICE ANNOUNCES IT CAN DO. Other services find this one by these
 %% names, so each entry is a promise that something answers.
 %%
-%% Only three of guide_mailbox_lifecycle's nine commands are reachable over
-%% the mesh so far, deliberately: initiate_mailbox, open_mailbox and
-%% deposit_letter disclose nothing about a mailbox's contents to call
-%% safely with self-asserted identity. mark_letter_read/reply_to_letter/
-%% archive_letter/close_mailbox/archive_mailbox/unarchive_mailbox and any
-%% future get_mailbox/get_letter query are gated behind resolving whether
-%% a macula_response handler gets verified caller identity -- see
-%% plans/PLAN_HECATE_MAIL_PART3_MAILBOXES.md's open question. Until then
-%% those commands are real, tested domain code (rebar3 eunit exercises
-%% them directly) with no RPC surface, not stubs.
+%% initiate_mailbox/open_mailbox/deposit_letter disclose nothing about a
+%% mailbox's contents, so they're safe to call with self-asserted
+%% identity. reply_to_letter/archive_letter/get_mailbox/get_letter act on
+%% or disclose ONE citizen's own mail, so each is gated behind
+%% `mailbox_ownership_proof' -- the caller must sign a message proving
+%% they hold the private key for the `citizen_did' they're acting as (see
+%% that module's doc; this closes the open question
+%% plans/PLAN_HECATE_MAIL_PART3_MAILBOXES.md left unresolved).
+%% mark_letter_read/close_mailbox/archive_mailbox/unarchive_mailbox stay
+%% real, tested domain code with no RPC surface in v1 -- close/archive/
+%% unarchive have no client need yet, and mark_letter_read is folded into
+%% get_mailbox (see get_mailbox_by_citizen_responder), not a separate call.
 capabilities() ->
     [
      #{name => <<"hecate_mail.initiate_mailbox">>, version => 1,
@@ -73,7 +85,15 @@ capabilities() ->
      #{name => <<"hecate_mail.open_mailbox">>, version => 1,
        handler => {open_mailbox_responder, []}},
      #{name => <<"hecate_mail.deposit_letter">>, version => 1,
-       handler => {deposit_letter_responder, []}}
+       handler => {deposit_letter_responder, []}},
+     #{name => <<"hecate_mail.reply_to_letter">>, version => 1,
+       handler => {reply_to_letter_responder, []}},
+     #{name => <<"hecate_mail.archive_letter">>, version => 1,
+       handler => {archive_letter_responder, []}},
+     #{name => <<"hecate_mail.get_mailbox">>, version => 1,
+       handler => {get_mailbox_by_citizen_responder, []}},
+     #{name => <<"hecate_mail.get_letter">>, version => 1,
+       handler => {get_letter_by_id_responder, []}}
     ].
 
 %% THE AUTHORITY THIS SERVICE ASKS THE REALM FOR, and deliberately nothing more.
@@ -81,7 +101,9 @@ capabilities() ->
 %% gains precisely this and no more, which is the whole point of listing it.
 identity_spec() ->
     #{scope => <<"hecate-mail">>,
-      actions => [<<"initiate_mailbox">>, <<"open_mailbox">>, <<"deposit_letter">>],
+      actions => [<<"initiate_mailbox">>, <<"open_mailbox">>, <<"deposit_letter">>,
+                  <<"reply_to_letter">>, <<"archive_letter">>, <<"get_mailbox">>,
+                  <<"get_letter">>],
       resources => [<<"mailboxes/*">>],
       ttl_days => 30}.
 
@@ -110,3 +132,9 @@ data_dir() -> chosen(os:getenv("HECATE_DATA_DIR")).
 chosen(false) -> "/tmp/hecate_mail";
 chosen("") -> "/tmp/hecate_mail";
 chosen(Path) -> Path.
+
+%% @doc The barrel_docdb database `project_mailboxes' writes the letter
+%% read model into, and `query_mailboxes' reads directly by this same
+%% name -- see the header note on `-export([read_model_id/0])'.
+-spec read_model_id() -> binary().
+read_model_id() -> <<"hecate_mail">>.

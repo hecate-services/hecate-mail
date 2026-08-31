@@ -12,7 +12,11 @@
         %% The domain: open/close a mailbox, deposit/read/reply/archive
         %% letters. hecate_mail_service:capabilities/0 references its
         %% responder modules directly.
-        guide_mailbox_lifecycle
+        guide_mailbox_lifecycle,
+        %% PRJ + QRY: the letter read model and its get_mailbox/get_letter
+        %% responders, also referenced directly from capabilities/0.
+        project_mailboxes,
+        query_mailboxes
     ]},
     {env, []},
     {modules, []},

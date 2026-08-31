@@ -58,13 +58,14 @@ info_version_matches_the_application_test() ->
 health_is_green_test() ->
     ?assertEqual(ok, ?SERVICE:health()).
 
-%% An empty list is the correct answer for a service that does nothing yet. The
-%% assertion is here so that adding a capability breaks a test and makes someone
-%% write down what the service can now actually do.
-announces_initiate_open_and_deposit_test() ->
+%% The assertion is here so that adding a capability breaks a test and makes
+%% someone write down what the service can now actually do.
+announces_the_seven_gated_and_ungated_desks_test() ->
     Names = [maps:get(name, C) || C <- ?SERVICE:capabilities()],
     ?assertEqual([<<"hecate_mail.initiate_mailbox">>, <<"hecate_mail.open_mailbox">>,
-                  <<"hecate_mail.deposit_letter">>], Names).
+                  <<"hecate_mail.deposit_letter">>, <<"hecate_mail.reply_to_letter">>,
+                  <<"hecate_mail.archive_letter">>, <<"hecate_mail.get_mailbox">>,
+                  <<"hecate_mail.get_letter">>], Names).
 
 identity_spec_has_the_shape_hecate_om_expects_test() ->
     #{scope := Scope, actions := Actions,

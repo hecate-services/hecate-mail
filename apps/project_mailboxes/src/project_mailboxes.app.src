@@ -1,0 +1,11 @@
+{application, project_mailboxes, [
+    {description, "PRJ: letter read-model projections for hecate-mail"},
+    {vsn, "0.1.0"},
+    {registered, [project_mailboxes_sup]},
+    {mod, {project_mailboxes_app, []}},
+    {applications, [kernel, stdlib, evoq, reckon_evoq, hecate_om]},
+    {env, []},
+    {modules, []},
+    {licenses, ["Apache-2.0"]},
+    {links, []}
+]}.
