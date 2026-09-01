@@ -7,11 +7,12 @@
 %%% read model itself, matching `project_tube's channel_lifecycle_to_channels
 %%% and its own cited precedent (hecate-mpong-bot).
 %%%
-%%% Every one of these events is scoped by its own stream_id
-%%% (`mailbox-{citizen_did}', per `mailbox_aggregate:stream_id/1'), not
-%%% by a `citizen_did' field on the event payload itself -- so the
-%%% owning citizen comes from `stream_id', stripped of its prefix, same
-%%% as the aggregate's own addressing.
+%%% Each event carries its own owning `citizen_did' (`to_citizen_did'
+%%% on `letter_deposited_v1', `citizen_did' on the other three) --
+%%% NOT derived from `stream_id'. `stream_id' is a one-way 128-bit
+%%% digest of the DID (reckon-db's own stream-id contract requires it,
+%%% see `mailbox_aggregate:stream_id/1''s doc), so nothing could
+%%% recover the DID from it even if this wanted to.
 -module(letter_lifecycle_to_mailboxes).
 
 -behaviour(evoq_projection).
@@ -32,8 +33,8 @@ init(_Config) ->
 %% timestamp, epoch_us} -- the event's own fields are nested under
 %% `data'. `field/2' is atom-or-binary tolerant since a round trip
 %% through the store is not guaranteed to preserve atom keys.
-project(#{event_type := <<"letter_deposited_v1">>, data := Data, stream_id := StreamId}, _Meta, State, RM) ->
-    CitizenDid = citizen_did(StreamId),
+project(#{event_type := <<"letter_deposited_v1">>, data := Data}, _Meta, State, RM) ->
+    CitizenDid = field(to_citizen_did, Data),
     Fields = #{
         letter_id => field(letter_id, Data),
         from_did => field(from_did, Data),
@@ -45,25 +46,20 @@ project(#{event_type := <<"letter_deposited_v1">>, data := Data, stream_id := St
     ok = mailboxes_read_model:upsert_deposited(CitizenDid, Fields),
     {ok, State, RM};
 
-project(#{event_type := <<"letter_read_v1">>, data := Data, stream_id := StreamId}, _Meta, State, RM) ->
-    ok = mailboxes_read_model:mark_read(citizen_did(StreamId), field(letter_id, Data)),
+project(#{event_type := <<"letter_read_v1">>, data := Data}, _Meta, State, RM) ->
+    ok = mailboxes_read_model:mark_read(field(citizen_did, Data), field(letter_id, Data)),
     {ok, State, RM};
 
-project(#{event_type := <<"letter_replied_v1">>, data := Data, stream_id := StreamId}, _Meta, State, RM) ->
-    ok = mailboxes_read_model:mark_replied(citizen_did(StreamId), field(letter_id, Data)),
+project(#{event_type := <<"letter_replied_v1">>, data := Data}, _Meta, State, RM) ->
+    ok = mailboxes_read_model:mark_replied(field(citizen_did, Data), field(letter_id, Data)),
     {ok, State, RM};
 
-project(#{event_type := <<"letter_archived_v1">>, data := Data, stream_id := StreamId}, _Meta, State, RM) ->
-    ok = mailboxes_read_model:mark_archived(citizen_did(StreamId), field(letter_id, Data)),
+project(#{event_type := <<"letter_archived_v1">>, data := Data}, _Meta, State, RM) ->
+    ok = mailboxes_read_model:mark_archived(field(citizen_did, Data), field(letter_id, Data)),
     {ok, State, RM};
 
 project(_Event, _Meta, State, RM) ->
     {skip, State, RM}.
-
-%% stream_id hex-encodes citizen_did (mailbox_aggregate:stream_id/1's
-%% own doc explains why) -- decoded back here to match what
-%% mailboxes_read_model stores/keys by.
-citizen_did(<<"mailbox-", HexDid/binary>>) -> binary:decode_hex(HexDid).
 
 field(Key, Map) when is_atom(Key) ->
     BinKey = atom_to_binary(Key, utf8),

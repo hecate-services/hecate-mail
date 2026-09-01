@@ -44,6 +44,7 @@ decide_letter(State, Cmd) ->
         #{from_did := OriginalSenderDid} ->
             Event = letter_replied_v1:new(#{
                 letter_id => LetterId,
+                citizen_did => reply_to_letter_v1:get_citizen_did(Cmd),
                 original_sender_did => OriginalSenderDid,
                 subject => reply_to_letter_v1:get_subject(Cmd),
                 body => reply_to_letter_v1:get_body(Cmd)

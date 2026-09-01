@@ -24,15 +24,26 @@
 state_module() -> mailbox_state.
 
 %% @doc A real citizen_did is a raw 32-byte Ed25519 pubkey (not the
-%% printable placeholder strings this repo's own eunit fixtures use)
-%% -- concatenating it straight into a stream_id crashes reckon-db's
-%% own stream-path validation (`{invalid_stream_id, ...}', confirmed
-%% live), so it's hex-encoded here, matching the same convention
-%% `mailboxes_read_model'/`citizen_read_model' already use for
-%% barrel_docdb document keys.
+%% printable placeholder strings this repo's own eunit fixtures use).
+%% reckon-db's own stream-id contract (reckon_gater_stream_id, the
+%% single source of truth reckon_db_stream_path delegates to) requires
+%% EXACTLY `^[a-z]{1,32}-[a-f0-9]{32}$' -- a 128-bit hex suffix, "one
+%% UUID-worth of bits" by its own doc. A 256-bit pubkey hex-encodes to
+%% 64 chars, which reckon-db rejects outright as `{invalid_stream_id,
+%% ...}' (confirmed live: got past a first attempt that just
+%% hex-encoded the full DID, still crashed).
+%%
+%% So the stream address is a deterministic 128-bit digest of the DID,
+%% not the DID itself -- and that makes it NOT reversible, unlike the
+%% straight hex-encode this used before. `letter_lifecycle_to_mailboxes'
+%% therefore reads `citizen_did'/`to_citizen_did' directly off each
+%% event's own data instead of parsing it back out of `stream_id' --
+%% see that module's doc and the four letter event modules, each of
+%% which now carries the field explicitly for exactly this reason.
 -spec stream_id(binary()) -> binary().
 stream_id(CitizenDid) ->
-    <<"mailbox-", (binary:encode_hex(CitizenDid, lowercase))/binary>>.
+    Digest = binary:part(crypto:hash(sha256, CitizenDid), 0, 16),
+    <<"mailbox-", (binary:encode_hex(Digest, lowercase))/binary>>.
 
 init(CitizenDid) ->
     {ok, mailbox_state:new(CitizenDid)}.

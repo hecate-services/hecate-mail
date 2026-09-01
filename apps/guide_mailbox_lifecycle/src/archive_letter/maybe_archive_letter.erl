@@ -33,7 +33,10 @@ decide_letter(State, Cmd) ->
         #{archived := true} ->
             {ok, []};
         _Letter ->
-            Event = letter_archived_v1:new(#{letter_id => LetterId}),
+            Event = letter_archived_v1:new(#{
+                letter_id => LetterId,
+                citizen_did => archive_letter_v1:get_citizen_did(Cmd)
+            }),
             {ok, [letter_archived_v1:to_map(Event)]}
     end.
 

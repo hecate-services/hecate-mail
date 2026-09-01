@@ -33,6 +33,7 @@ handle(Cmd) ->
         ok ->
             Event = letter_deposited_v1:new(#{
                 letter_id => deposit_letter_v1:get_letter_id(Cmd),
+                to_citizen_did => deposit_letter_v1:get_to_citizen_did(Cmd),
                 from_did => deposit_letter_v1:get_from_did(Cmd),
                 subject => deposit_letter_v1:get_subject(Cmd),
                 body => deposit_letter_v1:get_body(Cmd),

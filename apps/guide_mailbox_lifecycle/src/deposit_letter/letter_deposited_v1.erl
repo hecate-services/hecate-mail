@@ -1,14 +1,22 @@
 %%% @doc Event `letter_deposited_v1`.
+%%%
+%%% Carries `to_citizen_did' explicitly, even though this event only
+%%% ever lives on that same citizen's own stream -- the stream address
+%%% is a one-way 128-bit digest of the DID (reckon-db's own stream-id
+%%% contract requires it, see `mailbox_aggregate:stream_id/1''s doc),
+%%% not the DID itself, so nothing can recover it from `stream_id'
+%%% alone. `letter_lifecycle_to_mailboxes' reads this field directly.
 -module(letter_deposited_v1).
 -behaviour(evoq_event).
 
 -export([event_type/0]).
 -export([new/1, from_map/1, to_map/1]).
--export([get_letter_id/1, get_from_did/1, get_subject/1, get_body/1,
+-export([get_letter_id/1, get_to_citizen_did/1, get_from_did/1, get_subject/1, get_body/1,
          get_reply_letter_id/1, get_deposited_at/1]).
 
 -record(letter_deposited_v1, {
     letter_id :: binary(),
+    to_citizen_did :: binary(),
     from_did :: binary(),
     subject :: binary(),
     body :: binary(),
@@ -22,9 +30,10 @@
 event_type() -> <<"letter_deposited_v1">>.
 
 -spec new(map()) -> t().
-new(#{letter_id := Id, from_did := From} = Params) ->
+new(#{letter_id := Id, to_citizen_did := To, from_did := From} = Params) ->
     #letter_deposited_v1{
         letter_id = Id,
+        to_citizen_did = To,
         from_did = From,
         subject = maps:get(subject, Params, <<"">>),
         body = maps:get(body, Params, <<"">>),
@@ -33,10 +42,11 @@ new(#{letter_id := Id, from_did := From} = Params) ->
     }.
 
 -spec from_map(map()) -> {ok, t()} | {error, term()}.
-from_map(#{letter_id := Id, from_did := From, deposited_at := At} = M)
-  when is_binary(Id), is_binary(From), is_integer(At) ->
+from_map(#{letter_id := Id, to_citizen_did := To, from_did := From, deposited_at := At} = M)
+  when is_binary(Id), is_binary(To), is_binary(From), is_integer(At) ->
     {ok, #letter_deposited_v1{
         letter_id = Id,
+        to_citizen_did = To,
         from_did = From,
         subject = maps:get(subject, M, <<"">>),
         body = maps:get(body, M, <<"">>),
@@ -51,6 +61,7 @@ to_map(#letter_deposited_v1{} = E) ->
     #{
         event_type => <<"letter_deposited_v1">>,
         letter_id => E#letter_deposited_v1.letter_id,
+        to_citizen_did => E#letter_deposited_v1.to_citizen_did,
         from_did => E#letter_deposited_v1.from_did,
         subject => E#letter_deposited_v1.subject,
         body => E#letter_deposited_v1.body,
@@ -60,6 +71,9 @@ to_map(#letter_deposited_v1{} = E) ->
 
 -spec get_letter_id(t()) -> binary().
 get_letter_id(#letter_deposited_v1{letter_id = V}) -> V.
+
+-spec get_to_citizen_did(t()) -> binary().
+get_to_citizen_did(#letter_deposited_v1{to_citizen_did = V}) -> V.
 
 -spec get_from_did(t()) -> binary().
 get_from_did(#letter_deposited_v1{from_did = V}) -> V.
