@@ -17,7 +17,12 @@
 -spec upsert_deposited(binary(), map()) -> ok.
 upsert_deposited(CitizenDid, #{letter_id := LetterId} = Fields)
   when is_binary(CitizenDid), is_binary(LetterId) ->
-    Doc = #{
+    %% omit_undefined/1: barrel_docdb's automatic secondary indexing
+    %% (barrel_ars_index:make_index_ops/3) crashes outright on an
+    %% `undefined' field value (barrel_store_keys:encode_path_component/1
+    %% has no clause for it) -- confirmed live, reply_letter_id is
+    %% `undefined' on every non-reply deposit, which is most of them.
+    Doc = omit_undefined(#{
         <<"id">> => doc_id(CitizenDid, LetterId),
         <<"citizen_did">> => CitizenDid,
         <<"letter_id">> => LetterId,
@@ -29,7 +34,7 @@ upsert_deposited(CitizenDid, #{letter_id := LetterId} = Fields)
         <<"read">> => false,
         <<"replied">> => false,
         <<"archived">> => false
-    },
+    }),
     put(Doc).
 
 -spec mark_read(binary(), binary()) -> ok.
